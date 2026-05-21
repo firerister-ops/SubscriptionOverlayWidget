@@ -15,6 +15,8 @@ public sealed class SubscriptionService
         BaseAddress = new Uri("https://ai.wormsoft.ru/")
     };
 
+    private readonly DebugLogService _log = new();
+
     public async Task<SubscriptionLimitInfo> FetchSummaryAsync(string token)
     {
         try
@@ -24,6 +26,7 @@ public sealed class SubscriptionService
 
             using var response = await Client.SendAsync(request);
             var rawJson = await response.Content.ReadAsStringAsync();
+            _ = _log.WriteAsync($"[API] Status={response.StatusCode}, Body={rawJson}, ServerDate={response.Headers.Date?.UtcDateTime:O}");
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {

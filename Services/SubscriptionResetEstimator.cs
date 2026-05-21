@@ -6,100 +6,101 @@ namespace SubscriptionOverlayWidget.Services;
 
 public sealed class SubscriptionResetEstimator
 {
-    private static readonly Dictionary<string, TimeSpan> Intervals = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly List<(string keyword, TimeSpan interval)> Tiers = new()
     {
-        ["free"] = TimeSpan.FromHours(10),
-        ["promo"] = TimeSpan.FromHours(8),
-        ["simple"] = TimeSpan.FromHours(5),
-        ["payed"] = TimeSpan.FromHours(4),
-        ["wormsoft developer"] = TimeSpan.FromHours(2),
-        ["wormsoft boss"] = TimeSpan.FromHours(1)
+        ("free", TimeSpan.FromHours(10)),
+        ("promo", TimeSpan.FromHours(8)),
+        ("simple", TimeSpan.FromHours(5)),
+        ("payed", TimeSpan.FromHours(4)),
+        ("developer", TimeSpan.FromHours(2)),
+        ("boss", TimeSpan.FromHours(1))
     };
+
+    private readonly DebugLogService _log = new();
+
+    private static string Normalize(string s) => s.Replace(" ", "").Replace("-", "").Replace("_", "").ToUpperInvariant();
+
+    private static bool TryMatchTier(string subscriptionType, out TimeSpan interval)
+    {
+        var normalized = Normalize(subscriptionType);
+        foreach (var (keyword, span) in Tiers)
+        {
+            if (normalized.Contains(keyword.ToUpperInvariant(), StringComparison.Ordinal))
+            {
+                interval = span;
+                return true;
+            }
+        }
+        interval = default;
+        return false;
+    }
 
     public void Apply(AppSettings settings, SubscriptionLimitInfo info)
     {
         if (!info.IsSuccess || string.IsNullOrWhiteSpace(info.SubscriptionType) || !info.RemainingLimitValue.HasValue)
         {
+            _ = _log.WriteAsync($"[Reset] SKIP: IsSuccess={info.IsSuccess}, Type={info.SubscriptionType}, Raw={info.RemainingLimit}, Value={info.RemainingLimitValue}");
             info.ResetCountdownText = "Сброс лимитов: недоступен";
             return;
         }
 
-        if (!Intervals.TryGetValue(info.SubscriptionType, out var interval))
+        if (!TryMatchTier(info.SubscriptionType, out var interval))
         {
             info.ResetCountdownText = "Сброс лимитов: неизвестный тариф";
+            settings.LastKnownSubscriptionType = info.SubscriptionType;
+            settings.LastKnownRemainingLimit = info.RemainingLimitValue.Value;
+            _ = _log.WriteAsync($"[Reset] UNKNOWN TIER: {info.SubscriptionType}");
             return;
         }
 
-        var observedAtUtc = info.ServerDateUtc ?? info.UpdatedAt?.ToUniversalTime() ?? DateTime.UtcNow;
         var remaining = info.RemainingLimitValue.Value;
-        var samePlan = string.Equals(settings.LastKnownSubscriptionType, info.SubscriptionType, StringComparison.OrdinalIgnoreCase);
         var previousLimit = settings.LastKnownRemainingLimit;
-        var limitIncreased = samePlan && previousLimit >= 0 && remaining > previousLimit;
 
-        DateTime lastResetUtc;
-        if (!samePlan || !settings.LastResetAtUtc.HasValue)
+        _ = _log.WriteAsync($"[Reset] now={remaining}, prev={previousLimit}, type={info.SubscriptionType}");
+
+        // Единственный триггер: лимит вырос → запускаем таймер
+        if (previousLimit >= 0 && remaining > previousLimit)
         {
-            lastResetUtc = observedAtUtc;
+            _ = _log.WriteAsync($"[Reset] DETECTED! {remaining} > {previousLimit} → timer {interval.TotalHours}h");
+            settings.LastResetAtUtc = DateTime.UtcNow;
         }
-        else if (limitIncreased)
+
+        // Кешируем текущий лимит
+        settings.LastKnownSubscriptionType = info.SubscriptionType;
+        settings.LastKnownRemainingLimit = remaining;
+
+        // Показываем таймер
+        if (settings.LastResetAtUtc.HasValue)
         {
-            lastResetUtc = observedAtUtc;
-        }
-        else
-        {
-            lastResetUtc = settings.LastResetAtUtc.Value;
-            while (lastResetUtc + interval <= observedAtUtc)
+            var left = settings.LastResetAtUtc.Value + interval - DateTime.UtcNow;
+            if (left > TimeSpan.Zero)
             {
-                lastResetUtc += interval;
+                info.ResetCountdownText = $"Сброс лимитов: {Format(left)}";
+                return;
             }
         }
 
-        var nextResetUtc = lastResetUtc + interval;
-        while (nextResetUtc <= observedAtUtc)
-        {
-            lastResetUtc = nextResetUtc;
-            nextResetUtc = lastResetUtc + interval;
-        }
-
-        info.ResetInterval = interval;
-        info.EstimatedLastResetUtc = lastResetUtc;
-        info.EstimatedNextResetUtc = nextResetUtc;
-        info.ResetCountdownText = $"Сброс лимитов: {Format(nextResetUtc - observedAtUtc)}";
-
-        settings.LastKnownSubscriptionType = info.SubscriptionType;
-        settings.LastKnownRemainingLimit = remaining;
-        settings.LastObservedAtUtc = observedAtUtc;
-        settings.LastResetAtUtc = lastResetUtc;
+        info.ResetCountdownText = "Сброс лимитов: Жду ресета";
     }
 
     public string GetLiveCountdown(AppSettings settings)
     {
-        if (string.IsNullOrWhiteSpace(settings.LastKnownSubscriptionType) || !settings.LastResetAtUtc.HasValue)
-        {
+        if (!settings.LastResetAtUtc.HasValue)
             return "Сброс лимитов: Жду ресета";
-        }
 
-        if (!Intervals.TryGetValue(settings.LastKnownSubscriptionType, out var interval))
-        {
+        if (!TryMatchTier(settings.LastKnownSubscriptionType, out var interval))
             return "Сброс лимитов: неизвестный тариф";
-        }
 
-        var nextResetUtc = settings.LastResetAtUtc.Value + interval;
-        while (nextResetUtc <= DateTime.UtcNow)
-        {
-            nextResetUtc += interval;
-        }
+        var left = settings.LastResetAtUtc.Value + interval - DateTime.UtcNow;
+        if (left <= TimeSpan.Zero)
+            return "Сброс лимитов: Жду ресета";
 
-        return $"Сброс лимитов: {Format(nextResetUtc - DateTime.UtcNow)}";
+        return $"Сброс лимитов: {Format(left)}";
     }
 
     private static string Format(TimeSpan value)
     {
-        if (value < TimeSpan.Zero)
-        {
-            value = TimeSpan.Zero;
-        }
-
+        if (value < TimeSpan.Zero) value = TimeSpan.Zero;
         return $"{(int)value.TotalHours:00}:{value.Minutes:00}:{value.Seconds:00}";
     }
 }
