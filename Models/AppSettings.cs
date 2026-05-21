@@ -33,6 +33,10 @@ public sealed class AppSettings
 
     public double OverlayOpacity { get; set; } = 88;
 
+    public string HotkeyModifier { get; set; } = "None";
+
+    public string HotkeyKey { get; set; } = "";
+
     public double OverlayLeft { get; set; } = -1;
 
     public double OverlayTop { get; set; } = -1;

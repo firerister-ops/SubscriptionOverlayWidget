@@ -1,7 +1,10 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Forms = System.Windows.Forms;
 using SubscriptionOverlayWidget.Models;
@@ -12,6 +15,18 @@ namespace SubscriptionOverlayWidget;
 
 public partial class App : System.Windows.Application
 {
+    [DllImport("user32.dll")]
+    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [DllImport("user32.dll")]
+    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    private const int HotkeyId = 9000;
+    private const uint ModAlt = 0x0001;
+    private const uint ModShift = 0x0004;
+    private const uint ModCtrl = 0x0002;
+    private const uint ModNone = 0x0000;
+
     private readonly DebugLogService _debugLogService = new();
     private readonly SettingsService _settingsService = new();
     private readonly SubscriptionService _subscriptionService = new();
@@ -22,6 +37,8 @@ public partial class App : System.Windows.Application
     private DispatcherTimer? _timer;
     private DispatcherTimer? _countdownTimer;
     private AppSettings _settings = new();
+    private HwndSource? _hwndSource;
+    private bool _hotkeyRegistered;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -52,6 +69,7 @@ public partial class App : System.Windows.Application
             _settings.OverlayTop = position.Top;
             await _settingsService.SaveAsync(_settings);
         };
+        _overlayWindow.Loaded += (_, _) => RegisterGlobalHotkey();
         CreateTrayIcon();
         ConfigureTimer();
         ConfigureCountdownTimer();
@@ -76,6 +94,7 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        UnregisterGlobalHotkey();
         _timer?.Stop();
         _countdownTimer?.Stop();
 
@@ -92,14 +111,36 @@ public partial class App : System.Windows.Application
 
     private void CreateTrayIcon()
     {
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "favicon.ico");
-        var trayIcon = File.Exists(iconPath)
-            ? new System.Drawing.Icon(iconPath)
-            : System.Drawing.SystemIcons.Information;
+        System.Drawing.Icon? trayIcon = null;
+
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri("pack://application:,,,/logo.png", UriKind.Absolute);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            var tempPath = Path.Combine(Path.GetTempPath(), "sow_tray_icon.png");
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using (var fs = File.Create(tempPath))
+            {
+                encoder.Save(fs);
+            }
+
+            using var bmp = new System.Drawing.Bitmap(tempPath);
+            var handle = bmp.GetHicon();
+            trayIcon = System.Drawing.Icon.FromHandle(handle);
+        }
+        catch
+        {
+        }
 
         _notifyIcon = new Forms.NotifyIcon
         {
-            Icon = trayIcon,
+            Icon = trayIcon ?? System.Drawing.SystemIcons.Information,
             Text = "Subscription Overlay Widget",
             Visible = true,
             ContextMenuStrip = new Forms.ContextMenuStrip()
@@ -207,6 +248,7 @@ public partial class App : System.Windows.Application
                 await _settingsService.SaveAsync(_settings);
                 ApplyTimerInterval();
                 _overlayWindow?.ApplySettings(_settings);
+                RegisterGlobalHotkey();
 
                 ShowOverlay();
                 await RefreshNowAsync();
@@ -251,5 +293,82 @@ public partial class App : System.Windows.Application
         _resetEstimator.Apply(_settings, result);
         await _settingsService.SaveAsync(_settings);
         _overlayWindow.SetData(result);
+    }
+
+    private void RegisterGlobalHotkey()
+    {
+        UnregisterGlobalHotkey();
+
+        if (_overlayWindow is null)
+        {
+            return;
+        }
+
+        var key = _settings.HotkeyKey?.Trim() ?? "";
+        if (string.IsNullOrEmpty(key))
+        {
+            return;
+        }
+
+        var vk = (uint)char.ToUpper(key[0]);
+        if (vk < 0x41 || vk > 0x5A)
+        {
+            return;
+        }
+
+        var mod = _settings.HotkeyModifier?.Trim().ToLowerInvariant() switch
+        {
+            "alt" => ModAlt,
+            "shift" => ModShift,
+            "ctrl" => ModCtrl,
+            _ => ModNone
+        };
+
+        var hwnd = new WindowInteropHelper(_overlayWindow).Handle;
+        if (hwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        if (_hwndSource is null)
+        {
+            _hwndSource = HwndSource.FromHwnd(hwnd);
+            _hwndSource?.AddHook(WndProc);
+        }
+
+        if (RegisterHotKey(hwnd, HotkeyId, mod, vk))
+        {
+            _hotkeyRegistered = true;
+        }
+    }
+
+    private void UnregisterGlobalHotkey()
+    {
+        if (!_hotkeyRegistered)
+        {
+            return;
+        }
+
+        var hwnd = _overlayWindow is not null
+            ? new WindowInteropHelper(_overlayWindow).Handle
+            : IntPtr.Zero;
+
+        if (hwnd != IntPtr.Zero)
+        {
+            UnregisterHotKey(hwnd, HotkeyId);
+        }
+
+        _hotkeyRegistered = false;
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const int wmHotkey = 0x0312;
+        if (msg == wmHotkey && wParam.ToInt32() == HotkeyId)
+        {
+            ToggleOverlay();
+        }
+
+        return IntPtr.Zero;
     }
 }

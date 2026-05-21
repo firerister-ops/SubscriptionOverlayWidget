@@ -37,6 +37,10 @@ public partial class SettingsWindow : Window
         ShowResetTimerCheckBox.IsChecked = settings.ShowResetTimer;
         OverlayOpacitySlider.Value = Math.Max(20, Math.Min(100, settings.OverlayOpacity));
 
+        SelectComboValue(HotkeyModifierComboBox, settings.HotkeyModifier);
+        HotkeyKeyTextBox.Text = settings.HotkeyKey;
+        UpdateHotkeyPreview();
+
         UpdateColorButton(BackgroundColorButton, settings.OverlayBackgroundColor);
         UpdateColorButton(TextColorButton, settings.OverlayTextColor);
         UpdateColorButton(BorderColorButton, settings.OverlayBorderColor);
@@ -64,6 +68,7 @@ public partial class SettingsWindow : Window
 
     private void LiveSettingsChanged(object sender, EventArgs e)
     {
+        UpdateHotkeyPreview();
         TriggerLiveApply(false);
     }
 
@@ -193,6 +198,8 @@ public partial class SettingsWindow : Window
             OverlayFontSize = Math.Max(10, textFontSize),
             LimitValueFontSize = Math.Max(18, limitFontSize),
             OverlayOpacity = Math.Max(20, OverlayOpacitySlider.Value),
+            HotkeyModifier = (HotkeyModifierComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None",
+            HotkeyKey = HotkeyKeyTextBox.Text.Trim().ToUpperInvariant(),
             OverlayLeft = _initialSettings.OverlayLeft,
             OverlayTop = _initialSettings.OverlayTop,
             LastKnownSubscriptionType = _initialSettings.LastKnownSubscriptionType,
@@ -260,5 +267,27 @@ public partial class SettingsWindow : Window
     private static void SelectComboValue(System.Windows.Controls.ComboBox comboBox, string value)
     {
         comboBox.SelectedItem = comboBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => string.Equals(i.Content?.ToString(), value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void UpdateHotkeyPreview()
+    {
+        var modifier = (HotkeyModifierComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None";
+        var key = HotkeyKeyTextBox.Text.Trim();
+
+        if (string.IsNullOrEmpty(key))
+        {
+            HotkeyPreviewText.Text = "не задан";
+            HotkeyPlusText.Visibility = Visibility.Collapsed;
+        }
+        else if (modifier == "None")
+        {
+            HotkeyPreviewText.Text = key.ToUpper();
+            HotkeyPlusText.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            HotkeyPreviewText.Text = $"{modifier}+{key.ToUpper()}";
+            HotkeyPlusText.Visibility = Visibility.Visible;
+        }
     }
 }

@@ -4,13 +4,13 @@
         Title="Subscription Overlay Settings"
         Style="{StaticResource StandardWindowStyle}"
         Width="520"
-        Height="380"
+        Height="420"
         MinWidth="320"
         MinHeight="240"
         WindowStartupLocation="CenterScreen">
     <Border Style="{StaticResource ModernCard}" Margin="8" Padding="8">
         <Viewbox Stretch="Uniform">
-            <Grid Width="500" Height="340">
+            <Grid Width="500" Height="400">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
@@ -195,6 +195,27 @@
                                         <Button Content="Move" Width="86" Height="30" Margin="0,6,0,0" Click="MoveOverlay_Click"/>
                                     </StackPanel>
                                 </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="Hotkey" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="HotkeyModifierComboBox" Grid.Column="1" Width="72" Height="30" Margin="0,0,8,0" SelectionChanged="LiveSettingsChanged">
+                                    <ComboBoxItem Content="None"/>
+                                    <ComboBoxItem Content="Alt"/>
+                                    <ComboBoxItem Content="Shift"/>
+                                    <ComboBoxItem Content="Ctrl"/>
+                                </ComboBox>
+                                <TextBlock x:Name="HotkeyPlusText" Grid.Column="2" Text="+" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox x:Name="HotkeyKeyTextBox" Grid.Column="3" Width="36" Height="30" MaxLength="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" TextChanged="LiveSettingsChanged"/>
+                                <TextBlock x:Name="HotkeyPreviewText" Grid.Column="4" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                             </Grid>
 
                         </StackPanel>
