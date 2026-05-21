@@ -1,0 +1,44 @@
+## .NET 8 WPF
+bin/
+obj/
+out/
+publish/
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.sln.cache
+.vs/
+.vscode/
+*.csproj.user
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild[Ll]og.*
+
+# Test & coverage
+TestResults/
+*.coverage
+*.trx
+
+# Publish profiles
+*.pubxml
+*.publishproj
+
+# OS
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# Logs
+Logs/
+*.log

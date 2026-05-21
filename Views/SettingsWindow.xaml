@@ -1,0 +1,210 @@
+<Window x:Class="SubscriptionOverlayWidget.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Subscription Overlay Settings"
+        Style="{StaticResource StandardWindowStyle}"
+        Width="520"
+        Height="380"
+        MinWidth="320"
+        MinHeight="240"
+        WindowStartupLocation="CenterScreen">
+    <Border Style="{StaticResource ModernCard}" Margin="8" Padding="8">
+        <Viewbox Stretch="Uniform">
+            <Grid Width="500" Height="340">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2.2*"/>
+                            <ColumnDefinition Width="0.6*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource ModernSubCard}" Margin="0,0,12,0">
+                            <StackPanel>
+                                <TextBlock Text="API key" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource AccentAmberBrush}"/>
+                                <TextBlock Text="Хранение: %AppData%\SubscriptionOverlayWidget\settings.json. Ключ сохраняется локально в зашифрованном виде через DPAPI текущего пользователя Windows." Margin="0,6,0,10" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                <TextBox x:Name="ApiKeyTextBox" Height="36" VerticalContentAlignment="Center" TextChanged="LiveSettingsChanged"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource ModernSubCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Runtime" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource AccentAmberBrush}"/>
+                                <TextBlock Grid.Row="1" Text="Refresh interval (sec)" Margin="0,6,0,10" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBox Grid.Row="2" x:Name="RefreshIntervalTextBox" Height="36" VerticalContentAlignment="Center" TextChanged="LiveSettingsChanged"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <GroupBox Grid.Row="1" Header="Overlay appearance" Margin="0,10,0,0">
+                        <StackPanel Margin="4">
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox x:Name="ShowBrandingCheckBox" Content="Лого" Margin="0,0,10,0" Checked="LiveSettingsChanged" Unchecked="LiveSettingsChanged"/>
+                                <CheckBox x:Name="ShowSubscriptionCheckBox" Grid.Column="1" Content="Подписка" Margin="0,0,10,0" Checked="LiveSettingsChanged" Unchecked="LiveSettingsChanged"/>
+                                <CheckBox x:Name="ShowResetTimerCheckBox" Grid.Column="2" Content="Сброс" Margin="0,0,10,0" Checked="LiveSettingsChanged" Unchecked="LiveSettingsChanged"/>
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="Opacity" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <Slider x:Name="OverlayOpacitySlider" Width="84" Minimum="20" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="OverlaySlider_ValueChanged"/>
+                                    <TextBlock x:Name="OverlayOpacityValueTextBlock" Width="34" Margin="6,0,0,0" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Background" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                    <Button x:Name="BackgroundColorButton" Width="42" Height="30" Margin="0,8,0,0" Click="BackgroundColorButton_Click" Style="{StaticResource ColorSwatchButtonStyle}"/>
+                                    <Popup x:Name="BackgroundColorPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BackgroundColorButton}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                        <Border Style="{StaticResource ModernSubCard}" Padding="10">
+                                            <StackPanel Width="240">
+                                                <WrapPanel Margin="0,0,0,8">
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#121C27" Click="PresetColor_Click" Background="#121C27" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#0F1720" Click="PresetColor_Click" Background="#0F1720" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#3A2C08" Click="PresetColor_Click" Background="#3A2C08" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#0F2A1A" Click="PresetColor_Click" Background="#0F2A1A" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#1E1638" Click="PresetColor_Click" Background="#1E1638" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#351327" Click="PresetColor_Click" Background="#351327" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#1F2937" Click="PresetColor_Click" Background="#1F2937" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#334155" Click="PresetColor_Click" Background="#334155" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#7C2D12" Click="PresetColor_Click" Background="#7C2D12" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                </WrapPanel>
+                                                <TextBlock Text="Custom hex" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <TextBox x:Name="BackgroundColorTextBox" Height="34" Margin="0,6,0,0" TextChanged="ColorHexTextChanged"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                    <TextBlock Text="Text" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                    <Button x:Name="TextColorButton" Width="42" Height="30" Margin="0,8,0,0" Click="TextColorButton_Click" Style="{StaticResource ColorSwatchButtonStyle}"/>
+                                    <Popup x:Name="TextColorPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=TextColorButton}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                        <Border Style="{StaticResource ModernSubCard}" Padding="10">
+                                            <StackPanel Width="240">
+                                                <WrapPanel Margin="0,0,0,8">
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#E6EDF3" Click="PresetColor_Click" Background="#E6EDF3" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#FFFFFF" Click="PresetColor_Click" Background="#FFFFFF" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#EAB308" Click="PresetColor_Click" Background="#EAB308" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#93C5FD" Click="PresetColor_Click" Background="#93C5FD" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#A7F3D0" Click="PresetColor_Click" Background="#A7F3D0" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#FCA5A5" Click="PresetColor_Click" Background="#FCA5A5" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#C4B5FD" Click="PresetColor_Click" Background="#C4B5FD" BorderBrush="#445569" BorderThickness="1"/>
+                                                </WrapPanel>
+                                                <TextBlock Text="Custom hex" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <TextBox x:Name="TextColorTextBox" Height="34" Margin="0,6,0,0" TextChanged="ColorHexTextChanged"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                    <TextBlock Text="Border" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                    <Button x:Name="BorderColorButton" Width="42" Height="30" Margin="0,8,0,0" Click="BorderColorButton_Click" Style="{StaticResource ColorSwatchButtonStyle}"/>
+                                    <Popup x:Name="BorderColorPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BorderColorButton}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                        <Border Style="{StaticResource ModernSubCard}" Padding="10">
+                                            <StackPanel Width="240">
+                                                <WrapPanel Margin="0,0,0,8">
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#253246" Click="PresetColor_Click" Background="#253246" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#EAB308" Click="PresetColor_Click" Background="#EAB308" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#22C55E" Click="PresetColor_Click" Background="#22C55E" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#3B82F6" Click="PresetColor_Click" Background="#3B82F6" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#F97316" Click="PresetColor_Click" Background="#F97316" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#A855F7" Click="PresetColor_Click" Background="#A855F7" BorderBrush="#99FFFFFF" BorderThickness="1"/>
+                                                </WrapPanel>
+                                                <TextBlock Text="Custom hex" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <TextBox x:Name="BorderColorTextBox" Height="34" Margin="0,6,0,0" TextChanged="ColorHexTextChanged"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Margin="0,0,12,0">
+                                    <TextBlock Text="Limit" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                    <Button x:Name="LimitColorButton" Width="42" Height="30" Margin="0,8,0,0" Click="LimitColorButton_Click" Style="{StaticResource ColorSwatchButtonStyle}"/>
+                                    <Popup x:Name="LimitColorPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=LimitColorButton}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                        <Border Style="{StaticResource ModernSubCard}" Padding="10">
+                                            <StackPanel Width="240">
+                                                <WrapPanel Margin="0,0,0,8">
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#E6EDF3" Click="PresetColor_Click" Background="#E6EDF3" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#FFFFFF" Click="PresetColor_Click" Background="#FFFFFF" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#EAB308" Click="PresetColor_Click" Background="#EAB308" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#93C5FD" Click="PresetColor_Click" Background="#93C5FD" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#FCA5A5" Click="PresetColor_Click" Background="#FCA5A5" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#86EFAC" Click="PresetColor_Click" Background="#86EFAC" BorderBrush="#445569" BorderThickness="1"/>
+                                                    <Button Width="28" Height="28" Margin="0,0,6,6" Tag="#F9A8D4" Click="PresetColor_Click" Background="#F9A8D4" BorderBrush="#445569" BorderThickness="1"/>
+                                                </WrapPanel>
+                                                <TextBlock Text="Custom hex" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <TextBox x:Name="LimitColorTextBox" Height="34" Margin="0,6,0,0" TextChanged="ColorHexTextChanged"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="4" Margin="0,0,8,0">
+                                    <TextBlock Text="Text size" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                    <ComboBox x:Name="TextFontSizeComboBox" Width="58" Height="30" Margin="0,6,0,0" SelectionChanged="LiveSettingsChanged">
+                                        <ComboBoxItem Content="10"/>
+                                        <ComboBoxItem Content="11"/>
+                                        <ComboBoxItem Content="12"/>
+                                        <ComboBoxItem Content="13"/>
+                                        <ComboBoxItem Content="14"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                    <StackPanel Margin="0,0,8,0">
+                                        <TextBlock Text="Limit size" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                        <ComboBox x:Name="LimitFontSizeComboBox" Width="58" Height="30" Margin="0,6,0,0" SelectionChanged="LiveSettingsChanged">
+                                            <ComboBoxItem Content="22"/>
+                                            <ComboBoxItem Content="26"/>
+                                            <ComboBoxItem Content="30"/>
+                                            <ComboBoxItem Content="34"/>
+                                            <ComboBoxItem Content="38"/>
+                                            <ComboBoxItem Content="42"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Position" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                        <Button Content="Move" Width="86" Height="30" Margin="0,6,0,0" Click="MoveOverlay_Click"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                        </StackPanel>
+                    </GroupBox>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                    <Button Content="Close" Width="92" Height="30" Click="Cancel_Click" Background="{StaticResource CardAltBrush}" BorderBrush="{StaticResource BorderSoftBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Viewbox>
+    </Border>
+</Window>
